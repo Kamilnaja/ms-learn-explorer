@@ -14,7 +14,7 @@
   if (window.top !== window.self) return;          // nie w ramkach
 
   var HOST_ID = 'msle-host';
-  var host, root, ui = { collapsed: false };
+  var host, root, ui = { mode: 'full', last: 'full' };
   var plan = null, prog = {}, index = -1, exact = false, state = 'none';
   var pageKind = '', busy = false, statsOpen = false;
   var lastTs = Date.now(), timer = null, clockBound = false;
@@ -175,6 +175,11 @@
     '  width:24px;height:24px;border-radius:5px}',
     '.icon:hover{background:#1c2c42;color:#e8f0fb}',
     '.msg{flex:1 1 auto;color:#a9bdd6;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    /* tryb cichy — procent z lewej, przycisk z prawej, nic pomiędzy */
+    '.pct-btn{border:0;background:transparent;color:#4db8ff;font-weight:700;font-size:13px;',
+    '  cursor:pointer;padding:2px 5px;border-radius:4px;font-variant-numeric:tabular-nums}',
+    '.pct-btn:hover{background:#1c2c42}',
+    '.bar.quiet .pct-btn{margin-right:auto}',
     '.err{color:#ff9a9a}',
     /* zwinięty pasek */
     '.pill{pointer-events:auto;position:absolute;right:14px;bottom:12px;display:inline-flex;align-items:center;gap:8px;',
@@ -232,10 +237,18 @@
 
     if (state === 'none') { wrap.innerHTML = ''; setBodyPad(0); return; }
 
-    if (ui.collapsed) {
+    if (ui.mode === 'collapsed') {
       var label = plan ? plan.badge + ' · ' + M.stats(plan, prog).pct + '%' : 'MS Learn';
       wrap.innerHTML = '<button class="pill" data-act="expand">' + esc(label) + ' <span>▴</span></button>';
       setBodyPad(0);
+      return;
+    }
+
+    // Tryb cichy ma sens tylko tam, gdzie jest co liczyć — przy budowaniu planu
+    // czy poza kursem pokazujemy zwykły pasek.
+    if (ui.mode === 'quiet' && state === 'nav') {
+      wrap.innerHTML = quietHtml();
+      setBodyPad(wrap.getBoundingClientRect().height + 8);
       return;
     }
 
@@ -304,12 +317,29 @@
       '<span class="count">' + pos + ' / ' + s.total + '</span>' +
       '<span class="pct">' + s.pct + '%</span></div>' +
       nextBlock +
-      '<button class="icon" data-act="collapse" title="Zwiń">✕</button>' +
+      '<button class="icon" data-act="quiet" title="Tryb cichy — tylko procent i przycisk">—</button>' +
+      '<button class="icon" data-act="collapse" title="Zwiń pasek">✕</button>' +
       '</div>';
   }
 
   function track(pct) {
     return '<div class="track"><i style="width:' + pct + '%"></i></div>';
+  }
+
+  // Tryb cichy: procent po lewej, „Dalej" po prawej i nic więcej.
+  // Kliknięcie procentu wraca do pełnego paska, więc nie trzeba osobnego przycisku.
+  function quietHtml() {
+    var s = M.stats(plan, prog);
+    var n = nextIndex();
+    return '<div class="bar quiet">' +
+      track(s.pct) +
+      '<button class="pct-btn" data-act="loud" title="Pokaż szczegóły (' +
+      s.done + ' z ' + s.total + ' lekcji)">' + s.pct + '%</button>' +
+      (n >= 0
+        ? '<button class="go" data-act="next" title="Strzałka w prawo → dalej, w lewo ← wstecz">Dalej <span class="arr">→</span></button>'
+        : '<button class="go" disabled title="Kurs ukończony">Koniec</button>') +
+      '<button class="icon" data-act="collapse" title="Zwiń pasek">✕</button>' +
+      '</div>';
   }
 
   function statsHtml() {
@@ -353,8 +383,10 @@
 
     if (act === 'next') return goNext();
     if (act === 'stats') { statsOpen = !statsOpen; return render(); }
-    if (act === 'collapse') { ui.collapsed = true; M.saveUi(ui); return render(); }
-    if (act === 'expand') { ui.collapsed = false; M.saveUi(ui); return render(); }
+    if (act === 'quiet') return setMode('quiet');
+    if (act === 'loud') return setMode('full');
+    if (act === 'collapse') return setMode('collapsed');
+    if (act === 'expand') return setMode(ui.last === 'quiet' ? 'quiet' : 'full');
     if (act === 'build' || act === 'rebuild') return build();
     if (act === 'reset') {
       if (!plan) return;
@@ -362,6 +394,14 @@
       M.resetProgress(plan.key).then(render);
       return;
     }
+  }
+
+  function setMode(mode) {
+    ui.mode = mode;
+    if (mode !== 'collapsed') ui.last = mode;      // do czego wrócić po rozwinięciu
+    if (mode !== 'full') statsOpen = false;
+    M.saveUi(ui);
+    render();
   }
 
   function goNext() {
@@ -489,7 +529,7 @@
 
     Promise.all([M.loadIndex(), M.loadUi()]).then(function (res) {
       var ix = res[0];
-      ui = res[1] || { collapsed: false };
+      ui = res[1] || { mode: 'full', last: 'full' };
 
       return pickPlan(ix, key).then(function (hit) {
         if (hit) {

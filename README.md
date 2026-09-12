@@ -36,7 +36,18 @@ pierwszej lekcji nie blokuje przewijania strony). Strzałki góra/dół zostają
 
 Przycisk `▤` otwiera statystyki: procent, liczbę lekcji, ile minut materiału masz za sobą, ile
 realnego czasu spędziłeś na stronach, kiedy ostatnio się uczyłeś oraz rozbicie postępu na moduły.
-Przycisk `✕` zwija pasek do małej pigułki w rogu.
+
+Pasek ma trzy tryby, przełączane dwoma przyciskami po prawej:
+
+| Tryb | Co widać | Jak wejść / wyjść |
+|---|---|---|
+| pełny | wszystko powyżej | domyślny |
+| **cichy** | tylko procent i **Dalej** | przycisk `—`; wyjście — kliknięcie procentu |
+| zwinięty | pigułka z nazwą i procentem w rogu | przycisk `✕`; wyjście — kliknięcie pigułki |
+
+Tryb cichy zostawia listwę postępu na górnej krawędzi paska, więc postęp nadal widać kątem oka,
+a nic nie rozprasza podczas czytania. Nawigacja działa w nim tak samo — przyciskiem i strzałkami.
+Wybrany tryb jest zapamiętywany, a zwinięcie z trybu cichego wraca do cichego, nie do pełnego.
 
 Ikona rozszerzenia na pasku narzędzi pokazuje listę zapisanych kursów z postępem i pozwala wskoczyć
 w pierwszą nieprzerobioną lekcję.

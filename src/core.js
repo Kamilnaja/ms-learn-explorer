@@ -334,7 +334,16 @@
     });
   }
 
-  function loadUi() { return get(K.ui, { collapsed: false }); }
+  // Tryb paska: 'full' | 'quiet' (tylko procent i przycisk) | 'collapsed'.
+  // `last` pamieta, do ktorego trybu wrocic po rozwinieciu.
+  function loadUi() {
+    return get(K.ui, null).then(function (u) {
+      if (!u) return { mode: 'full', last: 'full' };
+      if (!u.mode) u.mode = u.collapsed ? 'collapsed' : 'full';   // migracja starego zapisu
+      if (u.last !== 'quiet' && u.last !== 'full') u.last = u.mode === 'quiet' ? 'quiet' : 'full';
+      return u;
+    });
+  }
   function saveUi(ui) { return set(K.ui, ui); }
 
   /* ------------------------------------------------------------ statystyki */
