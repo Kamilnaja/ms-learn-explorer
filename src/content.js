@@ -114,27 +114,28 @@
     ':host{all:initial}',
     '*{box-sizing:border-box;margin:0;padding:0;font-family:"Segoe UI",system-ui,-apple-system,sans-serif}',
     '.wrap{position:fixed;left:0;right:0;bottom:0;z-index:2147483647;pointer-events:none}',
-    '.bar{pointer-events:auto;display:flex;align-items:center;gap:14px;padding:10px 14px;',
+    /* Wszystko mieści się w jednym rzędzie, a pasek postępu leży na górnej krawędzi —
+       dzięki temu nie dokłada ani piksela wysokości. */
+    '.bar{position:relative;pointer-events:auto;display:flex;align-items:center;gap:10px;padding:5px 12px;',
     '  background:#0f1b2d;color:#e8f0fb;border-top:1px solid #24374f;',
-    '  box-shadow:0 -6px 24px rgba(0,0,0,.35);font-size:13px;line-height:1.35}',
-    '.prog{min-width:150px;flex:0 0 auto}',
-    '.prog-top{display:flex;align-items:center;gap:8px;white-space:nowrap}',
-    '.badge{background:#1b5fa8;color:#fff;border-radius:5px;padding:2px 7px;font-size:12px;font-weight:700;letter-spacing:.02em}',
+    '  box-shadow:0 -4px 18px rgba(0,0,0,.35);font-size:12.5px;line-height:1.3}',
+    '.prog{flex:0 0 auto;display:flex;align-items:center;gap:7px;white-space:nowrap}',
+    '.badge{background:#1b5fa8;color:#fff;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:700;letter-spacing:.02em}',
     '.count{color:#a9bdd6;font-variant-numeric:tabular-nums}',
     '.pct{color:#4db8ff;font-weight:700;font-variant-numeric:tabular-nums}',
-    '.track{height:5px;border-radius:3px;background:#24374f;margin-top:6px;overflow:hidden}',
-    '.track i{display:block;height:100%;background:linear-gradient(90deg,#1b5fa8,#4db8ff);border-radius:3px;transition:width .3s ease}',
-    '.next{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px}',
-    '.next-lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:#7f98b5}',
-    '.next-title{font-size:14px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-    '.next-sub{font-size:11.5px;color:#8fa7c2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-    '.go{flex:0 0 auto;display:inline-flex;align-items:center;gap:9px;border:0;cursor:pointer;',
-    '  background:#2f80ed;color:#fff;font-size:14px;font-weight:700;padding:10px 20px;border-radius:7px}',
+    '.track{position:absolute;top:0;left:0;right:0;height:3px;background:#24374f;overflow:hidden}',
+    '.track i{display:block;height:100%;background:linear-gradient(90deg,#1b5fa8,#4db8ff);transition:width .3s ease}',
+    '.next{flex:1 1 auto;min-width:0;display:flex;align-items:baseline;gap:7px;overflow:hidden}',
+    '.next-lbl{flex:0 0 auto;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#ffb86b}',
+    '.next-title{flex:0 1 auto;font-size:13px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    '.next-sub{flex:0 1 auto;font-size:11.5px;color:#8fa7c2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    '.go{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;border:0;cursor:pointer;',
+    '  background:#2f80ed;color:#fff;font-size:13px;font-weight:700;padding:5px 14px;border-radius:6px}',
     '.go:hover{background:#4a92f5}',
     '.go:disabled{background:#2a3c54;color:#8fa7c2;cursor:default}',
-    '.go .arr{font-size:16px;line-height:1}',
-    '.icon{flex:0 0 auto;border:0;background:transparent;color:#8fa7c2;cursor:pointer;font-size:15px;',
-    '  width:30px;height:30px;border-radius:6px}',
+    '.go .arr{font-size:14px;line-height:1}',
+    '.icon{flex:0 0 auto;border:0;background:transparent;color:#8fa7c2;cursor:pointer;font-size:13px;',
+    '  width:24px;height:24px;border-radius:5px}',
     '.icon:hover{background:#1c2c42;color:#e8f0fb}',
     '.msg{flex:1 1 auto;color:#a9bdd6;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
     '.err{color:#ff9a9a}',
@@ -161,7 +162,8 @@
     '.acts{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}',
     '.acts button{background:#1c2c42;border:1px solid #2a3f5a;color:#cfe0f4;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:12px}',
     '.acts button:hover{background:#25394f}',
-    '@media(max-width:760px){.next-sub,.next-lbl{display:none}.prog{min-width:120px}}'
+    '@media(max-width:760px){.next-sub{display:none}}',
+    '@media(max-width:520px){.count{display:none}}'
   ].join('\n');
 
   function mount() {
@@ -224,9 +226,9 @@
     if (state === 'other') {
       var s0 = M.stats(plan, prog);
       return '<div class="bar">' +
-        '<div class="prog"><div class="prog-top"><b class="badge">' + esc(plan.badge) + '</b>' +
+        track(s0.pct) +
+        '<div class="prog"><b class="badge">' + esc(plan.badge) + '</b>' +
         '<span class="pct">' + s0.pct + '%</span></div>' +
-        '<div class="track"><i style="width:' + s0.pct + '%"></i></div></div>' +
         '<div class="msg">Ta strona nie należy do kursu — wróć do nauki.</div>' +
         '<button class="go" data-act="next">Wróć do kursu <span class="arr">→</span></button>' +
         '<button class="icon" data-act="collapse" title="Zwiń">✕</button>' +
@@ -240,15 +242,16 @@
 
     var nextBlock;
     if (!item) {
-      nextBlock = '<div class="next"><span class="next-lbl">Gotowe</span>' +
+      nextBlock = '<div class="next">' +
         '<span class="next-title">Kurs ukończony 🎉</span>' +
         '<span class="next-sub">' + esc(plan.title) + ' · ' + s.total + ' lekcji</span></div>' +
         '<button class="go" disabled>Koniec</button>';
     } else {
-      // Skok wstecz zdarza się tylko wtedy, gdy na końcu kursu zostały zaległości.
+      // Skok wstecz zdarza się tylko wtedy, gdy na końcu kursu zostały zaległości —
+      // wtedy (i tylko wtedy) dokładamy etykietę, bo inaczej rząd mówi sam za siebie.
       var back = exact && n <= index;
-      nextBlock = '<div class="next"><span class="next-lbl">' +
-        (back ? 'Zaległa lekcja' : 'Następna lekcja') + '</span>' +
+      nextBlock = '<div class="next">' +
+        (back ? '<span class="next-lbl">zaległa</span>' : '') +
         '<span class="next-title">' + esc(item.title) + '</span>' +
         '<span class="next-sub">' + esc(item.moduleTitle) + ' · ' + item.minutes + ' min' +
         (prog[item.key] ? ' · przerobione' : '') + '</span></div>' +
@@ -256,15 +259,19 @@
     }
 
     return '<div class="bar">' +
+      track(s.pct) +
       '<button class="icon" data-act="stats" title="Statystyki">▤</button>' +
-      '<div class="prog"><div class="prog-top">' +
+      '<div class="prog">' +
       '<b class="badge">' + esc(plan.badge) + '</b>' +
       '<span class="count">' + pos + ' / ' + s.total + '</span>' +
       '<span class="pct">' + s.pct + '%</span></div>' +
-      '<div class="track"><i style="width:' + s.pct + '%"></i></div></div>' +
       nextBlock +
       '<button class="icon" data-act="collapse" title="Zwiń">✕</button>' +
       '</div>';
+  }
+
+  function track(pct) {
+    return '<div class="track"><i style="width:' + pct + '%"></i></div>';
   }
 
   function statsHtml() {
