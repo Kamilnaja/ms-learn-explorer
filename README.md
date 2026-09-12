@@ -26,7 +26,13 @@ Pasek na dole pokazuje:
 
 - etykietę kursu (`DP-900`), pozycję (`12 / 63`) i **procent ukończenia** wraz z paskiem postępu,
 - tytuł następnej lekcji, jej moduł i czas trwania,
-- przycisk **Dalej →** (skrót klawiszowy: `Alt` + `→`).
+- przycisk **Dalej →**.
+
+Z klawiatury: **`→`** przechodzi do następnej lekcji, **`←`** wraca do poprzedniej (działa też
+`Alt` + `→`). Strzałki przejmujemy tylko wtedy, gdy nikt inny ich nie potrzebuje — gdy kursor stoi
+w polu tekstowym, w grupie odpowiedzi testu wiedzy, na suwaku czy w innym widżecie, klawisz idzie
+tam, gdzie powinien. Tak samo przy wciśniętym `Ctrl` lub `Shift`, oraz gdy nie ma dokąd iść (`←` na
+pierwszej lekcji nie blokuje przewijania strony). Strzałki góra/dół zostają nietknięte.
 
 Przycisk `▤` otwiera statystyki: procent, liczbę lekcji, ile minut materiału masz za sobą, ile
 realnego czasu spędziłeś na stronach, kiedy ostatnio się uczyłeś oraz rozbicie postępu na moduły.

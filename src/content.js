@@ -255,7 +255,7 @@
         '<span class="next-title">' + esc(item.title) + '</span>' +
         '<span class="next-sub">' + esc(item.moduleTitle) + ' · ' + item.minutes + ' min' +
         (prog[item.key] ? ' · przerobione' : '') + '</span></div>' +
-        '<button class="go" data-act="next" title="Alt + strzałka w prawo">Dalej <span class="arr">→</span></button>';
+        '<button class="go" data-act="next" title="Strzałka w prawo → dalej, w lewo ← wstecz">Dalej <span class="arr">→</span></button>';
     }
 
     return '<div class="bar">' +
@@ -327,6 +327,19 @@
   function goNext() {
     if (!plan) return;
     var n = nextIndex();
+    if (n < 0) return;
+    flushTime();
+    location.href = plan.items[n].url;
+  }
+
+  // Wstecz działa tylko z lekcji — ze spisu treści nie ma sensownego „poprzedniego".
+  function prevIndex() {
+    if (!plan || !exact) return -1;
+    return index > 0 ? index - 1 : -1;
+  }
+
+  function goPrev() {
+    var n = prevIndex();
     if (n < 0) return;
     flushTime();
     location.href = plan.items[n].url;
@@ -468,11 +481,39 @@
     });
   }
 
-  document.addEventListener('keydown', function (e) {
-    if (e.altKey && e.key === 'ArrowRight' && state === 'nav') {
-      e.preventDefault();
-      goNext();
+  /* --------------------------------------------------------- klawiatura */
+
+  // Gołe strzałki przejmujemy tylko wtedy, gdy nikt inny ich nie potrzebuje.
+  // Na Learn strzałki przełączają m.in. opcje w testach wiedzy (grupy radio),
+  // przewijają suwaki i poruszają kursorem w polach tekstowych — tam ustępujemy.
+  var EDITABLE = /^(input|textarea|select|audio|video)$/;
+  var WIDGET_ROLE = /^(textbox|searchbox|combobox|listbox|option|radio|radiogroup|slider|spinbutton|menu|menubar|menuitem|tab|tablist|tree|treeitem|grid|gridcell)$/;
+
+  function usesArrows(e) {
+    var path = (e.composedPath && e.composedPath()) || (e.target ? [e.target] : []);
+    for (var i = 0; i < path.length; i++) {
+      var el = path[i];
+      if (!el || el.nodeType !== 1) continue;
+      if (EDITABLE.test((el.tagName || '').toLowerCase())) return true;
+      if (el.isContentEditable) return true;
+      var ce = el.getAttribute && el.getAttribute('contenteditable');
+      if (ce && ce !== 'false') return true;
+      var role = el.getAttribute && el.getAttribute('role');
+      if (role && WIDGET_ROLE.test(role)) return true;
     }
+    return false;
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (state !== 'nav' || e.defaultPrevented) return;
+    if (e.ctrlKey || e.metaKey || e.shiftKey) return;   // Alt zostawiamy — to stary skrót
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    if (usesArrows(e)) return;
+
+    var target = e.key === 'ArrowRight' ? nextIndex() : prevIndex();
+    if (target < 0) return;                            // nie blokujemy klawisza bez potrzeby
+    e.preventDefault();
+    if (e.key === 'ArrowRight') goNext(); else goPrev();
   });
 
   // Learn potrafi zmienić adres bez przeładowania — wtedy przeliczamy pasek.
