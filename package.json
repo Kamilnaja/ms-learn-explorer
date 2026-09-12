@@ -1,0 +1,16 @@
+{
+  "name": "ms-learn-explorer",
+  "version": "1.0.0",
+  "description": "Rozszerzenie do Firefoksa: jeden przycisk \"Dalej\" prowadzący liniowo przez kursy Microsoft Learn.",
+  "private": true,
+  "scripts": {
+    "lint": "web-ext lint --source-dir . --self-hosted",
+    "start": "web-ext run --source-dir . --start-url https://learn.microsoft.com/en-us/training/courses/dp-900t00",
+    "build": "web-ext build --source-dir . --overwrite-dest"
+  },
+  "keywords": ["firefox", "webextension", "microsoft-learn"],
+  "license": "ISC",
+  "devDependencies": {
+    "web-ext": "^8.3.0"
+  }
+}

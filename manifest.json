@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "MS Learn Explorer",
+  "version": "1.0.0",
+  "description": "Jeden przycisk „Dalej” — liniowe przechodzenie kursów Microsoft Learn bez wracania do spisu treści.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "ms-learn-explorer@kamilnaja",
+      "strict_min_version": "115.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  },
+  "permissions": ["storage"],
+  "host_permissions": ["https://learn.microsoft.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://learn.microsoft.com/*"],
+      "js": ["src/core.js", "src/content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_title": "MS Learn Explorer"
+  },
+  "icons": {
+    "48": "icons/icon.svg",
+    "96": "icons/icon.svg"
+  }
+}

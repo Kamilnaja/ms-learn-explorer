@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <title>MS Learn Explorer</title>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      width: 330px; margin: 0; padding: 12px;
+      background: #0f1b2d; color: #e8f0fb;
+      font: 13px/1.4 "Segoe UI", system-ui, sans-serif;
+    }
+    h1 { font-size: 13px; margin: 0 0 10px; color: #8fa7c2; font-weight: 600;
+         text-transform: uppercase; letter-spacing: .08em; }
+    .empty { color: #8fa7c2; font-size: 12.5px; }
+    .empty a { color: #4db8ff; }
+    .card { background: #16243a; border: 1px solid #24374f; border-radius: 8px;
+            padding: 10px 11px; margin-bottom: 9px; }
+    .card.active { border-color: #2f80ed; }
+    .top { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+    .badge { background: #1b5fa8; color: #fff; border-radius: 5px; padding: 1px 7px;
+             font-size: 11px; font-weight: 700; }
+    .pct { margin-left: auto; color: #4db8ff; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .title { font-size: 12.5px; color: #cfe0f4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .track { height: 5px; background: #24374f; border-radius: 3px; margin: 7px 0 6px; overflow: hidden; }
+    .track i { display: block; height: 100%; background: linear-gradient(90deg, #1b5fa8, #4db8ff); }
+    .meta { font-size: 11px; color: #7f98b5; display: flex; gap: 8px; flex-wrap: wrap; }
+    .row { display: flex; gap: 6px; margin-top: 9px; }
+    button { flex: 1; background: #2f80ed; border: 0; color: #fff; border-radius: 6px;
+             padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    button:hover { background: #4a92f5; }
+    button.ghost { flex: 0 0 auto; background: #1c2c42; color: #a9bdd6; font-weight: 500; }
+    button.ghost:hover { background: #25394f; }
+  </style>
+</head>
+<body>
+  <h1>Moje kursy</h1>
+  <div id="list"></div>
+  <script src="core.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
