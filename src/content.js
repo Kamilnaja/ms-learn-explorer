@@ -126,7 +126,8 @@
     '.track{position:absolute;top:0;left:0;right:0;height:3px;background:#24374f;overflow:hidden}',
     '.track i{display:block;height:100%;background:linear-gradient(90deg,#1b5fa8,#4db8ff);transition:width .3s ease}',
     '.next{flex:1 1 auto;min-width:0;display:flex;align-items:baseline;gap:7px;overflow:hidden}',
-    '.next-lbl{flex:0 0 auto;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#ffb86b}',
+    '.next-lbl{flex:0 0 auto;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#7f98b5}',
+    '.next-lbl.due{color:#ffb86b}',
     '.next-title{flex:0 1 auto;font-size:13px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
     '.next-sub{flex:0 1 auto;font-size:11.5px;color:#8fa7c2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
     '.go{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;border:0;cursor:pointer;',
@@ -247,11 +248,12 @@
         '<span class="next-sub">' + esc(plan.title) + ' · ' + s.total + ' lekcji</span></div>' +
         '<button class="go" disabled>Koniec</button>';
     } else {
-      // Skok wstecz zdarza się tylko wtedy, gdy na końcu kursu zostały zaległości —
-      // wtedy (i tylko wtedy) dokładamy etykietę, bo inaczej rząd mówi sam za siebie.
+      // Etykieta jest obowiązkowa: bez niej tytuł następnej lekcji czyta się
+      // jak nazwa strony, na której właśnie jesteśmy.
       var back = exact && n <= index;
       nextBlock = '<div class="next">' +
-        (back ? '<span class="next-lbl">zaległa</span>' : '') +
+        (back ? '<span class="next-lbl due">zaległa</span>'
+              : '<span class="next-lbl">następna</span>') +
         '<span class="next-title">' + esc(item.title) + '</span>' +
         '<span class="next-sub">' + esc(item.moduleTitle) + ' · ' + item.minutes + ' min' +
         (prog[item.key] ? ' · przerobione' : '') + '</span></div>' +
