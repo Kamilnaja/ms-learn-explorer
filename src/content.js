@@ -75,37 +75,73 @@
       return Promise.resolve(base);
     }
     if (info.kind === 'path' && info.uid) {
-      base.kind = 'path';
-      base.children = [{ uid: info.uid, type: 'path' }];
-      return Promise.resolve(base);
+      return upgradeToCourse(info.uid, info.locale, function () {
+        base.kind = 'path';
+        base.children = [{ uid: info.uid, type: 'path' }];
+        return base;
+      });
     }
     if (info.kind === 'module' && info.uid) {
-      base.kind = 'module';
-      base.children = [{ uid: info.uid, type: 'module' }];
-      return Promise.resolve(base);
+      return pathOfModule(info.uid, info.locale).then(function (parent) {
+        return upgradeToCourse(parent && parent.uid, info.locale, function () {
+          if (parent) {
+            return {
+              kind: 'path', locale: info.locale,
+              url: M.absolute(parent.url, info.locale), title: parent.title,
+              badge: M.badgeFor({ courseNumber: '' }, parent.title),
+              children: [{ uid: parent.uid, type: 'path' }]
+            };
+          }
+          base.kind = 'module';
+          base.children = [{ uid: info.uid, type: 'module' }];
+          return base;
+        });
+      });
     }
     if (info.kind === 'unit' && info.uid.indexOf('.') > 0) {
-      // Z lekcji wychodzimy w górę: najchętniej do całej ścieżki, w ostateczności do modułu.
       var modUid = info.uid.replace(/\.[^.]+$/, '');
       return moduleHierarchy(modUid, info.locale).then(function (mod) {
         var parent = (mod.parents || []).filter(function (p) { return p.type === 'learningPath'; })[0];
-        if (parent) {
+        return upgradeToCourse(parent && parent.uid, info.locale, function () {
+          if (parent) {
+            return {
+              kind: 'path', locale: info.locale,
+              url: M.absolute(parent.url, info.locale), title: parent.title,
+              badge: M.badgeFor({ courseNumber: '' }, parent.title),
+              children: [{ uid: parent.uid, type: 'path' }]
+            };
+          }
           return {
-            kind: 'path', locale: info.locale,
-            url: M.absolute(parent.url, info.locale),
-            title: parent.title, badge: M.badgeFor({ courseNumber: '' }, parent.title),
-            children: [{ uid: parent.uid, type: 'path' }]
+            kind: 'module', locale: info.locale,
+            url: M.absolute(mod.url, info.locale), title: mod.title,
+            badge: M.badgeFor({ courseNumber: '' }, mod.title),
+            children: [{ uid: mod.uid, type: 'module' }]
           };
-        }
-        return {
-          kind: 'module', locale: info.locale,
-          url: M.absolute(mod.url, info.locale),
-          title: mod.title, badge: M.badgeFor({ courseNumber: '' }, mod.title),
-          children: [{ uid: mod.uid, type: 'module' }]
-        };
+        });
       }).catch(function () { return null; });
     }
     return Promise.resolve(null);
+  }
+
+  function pathOfModule(modUid, locale) {
+    return moduleHierarchy(modUid, locale).then(function (mod) {
+      return (mod.parents || []).filter(function (p) { return p.type === 'learningPath'; })[0] || null;
+    }).catch(function () { return null; });
+  }
+
+  // Sciezka prawie zawsze jest czescia wiekszego kursu — a to kurs chcemy przejsc
+  // liniowo. Bez tego DP-900 rozpadal sie na cztery osobne plany po 13 lekcji.
+  function upgradeToCourse(pathUid, locale, fallback) {
+    if (!pathUid) return Promise.resolve(fallback());
+    return M.courseForUid(pathUid, locale).then(function (course) {
+      if (!course || !course.children.length) return fallback();
+      return {
+        kind: 'course', locale: locale,
+        url: course.url, title: course.title,
+        badge: M.badgeFor({ courseNumber: course.courseNumber }, course.title),
+        children: course.children
+      };
+    }).catch(function () { return fallback(); });
   }
 
   /* ------------------------------------------------------------- widok */
@@ -212,8 +248,8 @@
       var what = {
         course: ['Zbuduję plan całego kursu — potem wystarczy klikać „Dalej”.', 'Zacznij kurs'],
         path: ['Zbuduję plan tej ścieżki szkoleniowej.', 'Zacznij ścieżkę'],
-        module: ['Zbuduję plan ścieżki, do której należy ten moduł.', 'Zacznij naukę'],
-        unit: ['Zbuduję plan ścieżki, do której należy ta lekcja.', 'Zacznij naukę']
+        module: ['Zbuduję plan kursu, do którego należy ten moduł.', 'Zacznij naukę'],
+        unit: ['Zbuduję plan kursu, do którego należy ta lekcja.', 'Zacznij naukę']
       }[pageKind] || ['Zbuduję plan nauki dla tej strony.', 'Zacznij naukę'];
 
       return '<div class="bar">' +
@@ -299,7 +335,9 @@
       '<div class="kpi"><b>' + esc(M.ago(s.last)) + '</b><span>ostatnia nauka</span></div>' +
       '</div>' + rows +
       '<div class="acts">' +
-      '<button data-act="rebuild">Odśwież plan kursu</button>' +
+      '<button data-act="rebuild">' +
+      (plan.kind === 'course' ? 'Odśwież plan kursu' : 'Znajdź kurs i rozszerz plan') +
+      '</button>' +
       '<button data-act="reset">Wyzeruj postęp</button>' +
       '<button data-act="stats">Zamknij</button>' +
       '</div></div>';
@@ -361,7 +399,7 @@
           if (!p.badge) p.badge = p.title.split(/\s+/).slice(0, 3).join(' ');
           return M.savePlan(p).then(function () {
             plan = p;
-            return M.loadProgress(p.key);
+            return M.inheritProgress(p);
           }).then(function (pr) {
             prog = pr;
             busy = false;
@@ -423,17 +461,22 @@
 
   /* ------------------------------------------------------------- start */
 
-  function pickPlan(ix, key) {
-    var keys = Object.keys(ix.courses);
-    if (ix.active) keys = [ix.active].concat(keys.filter(function (k) { return k !== ix.active; }));
+  // Jedna lekcja potrafi nalezec do kilku planow (kurs i osobno jego sciezka).
+  // Wygrywa plan najpelniejszy, nie ten ostatnio uzywany — inaczej stary plan
+  // pojedynczej sciezki przykrywal kurs i licznik pokazywal 13 zamiast 63.
+  function planRank(p) {
+    return (p.kind === 'course' ? 1e6 : 0) + p.items.length;
+  }
 
-    return keys.reduce(function (chain, ck) {
-      return chain.then(function (found) {
-        if (found) return found;
+  function pickPlan(ix, key) {
+    return Object.keys(ix.courses).reduce(function (chain, ck) {
+      return chain.then(function (best) {
         return M.loadPlan(ck).then(function (p) {
-          if (!p) return null;
+          if (!p) return best;
           var loc = locate(p, key);
-          return loc ? { plan: p, loc: loc } : null;
+          if (!loc) return best;
+          if (best && planRank(best.plan) >= planRank(p)) return best;
+          return { plan: p, loc: loc };
         });
       });
     }, Promise.resolve(null));

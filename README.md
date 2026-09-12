@@ -45,7 +45,7 @@ Rozszerzenie działa na trzy sposoby w zależności od strony:
 
 | Gdzie jesteś | Co robi pasek |
 |---|---|
-| strona kursu / ścieżki / modułu bez planu | proponuje **Zacznij kurs** i buduje plan |
+| strona kursu / ścieżki / modułu / lekcji bez planu | proponuje **Zacznij kurs** i buduje plan |
 | lekcja należąca do planu | pokazuje postęp i prowadzi do następnej lekcji |
 | strona spoza kursu | oferuje powrót do pierwszej nieprzerobionej lekcji |
 
@@ -63,6 +63,15 @@ Microsoft Learn, z którego korzysta sama strona:
 - `/api/hierarchy/modules/<uid>?locale=xx-yy` → lekcje modułu wraz z adresami i czasem trwania.
 
 Identyfikatory ścieżek bierzemy ze znaczników `<meta name="learn_item">` na stronie kursu.
+
+Gdy plan budujesz z lekcji, modułu albo ścieżki, celujemy **w cały kurs**, a nie w samą ścieżkę.
+Ścieżka nie wie, do jakiego kursu należy, więc odwracamy mapowanie z katalogu Learn
+(`/api/catalog/?type=courses`), gdzie pole `study_guide` wypisuje ścieżki każdego kursu. Bez tego
+DP-900 rozpadał się na cztery niezależne plany po 13 lekcji zamiast jednego na 63.
+
+Gdy jedna lekcja należy do kilku planów naraz, wygrywa plan najpełniejszy — kurs bije pojedynczą
+ścieżkę. Przy przebudowie planu postęp z pozostałych planów jest przejmowany (jest kluczowany
+adresem lekcji), więc rozszerzenie ścieżki do kursu nie kasuje tego, co już przerobione.
 Zbudowanie planu DP-900 to 13 zapytań, wykonywanych raz — potem plan siedzi w pamięci rozszerzenia.
 Plan odświeżysz przyciskiem **Odśwież plan kursu** w panelu statystyk.
 

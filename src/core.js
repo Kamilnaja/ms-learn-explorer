@@ -76,12 +76,17 @@
     };
   }
 
-  // Krótka etykieta na przycisk: 'DP-900T00' -> 'DP-900', inaczej pierwsze słowa tytułu.
+  // Krótka etykieta na przycisk: 'DP-900T00' -> 'DP-900'.
+  // Bez numeru kursu bierzemy tytuł, ale bez wiodącego wypełniacza — inaczej
+  // dwie różne ścieżki wyglądają tak samo ("Introduction to Microsoft…").
+  var FILLER = /^(introduction to|get started with|explore|understand|describe|work with|microsoft|azure|the|a)\s+/i;
+
   function badgeFor(info, fallbackTitle) {
     if (info.courseNumber) return info.courseNumber.replace(/T\d+(-[A-Z])?$/i, '');
     var t = (fallbackTitle || info.title || 'Learn').replace(/\s*[|–-]\s*Training.*$/i, '').trim();
-    var words = t.split(/\s+/).slice(0, 3).join(' ');
-    return words.length > 28 ? words.slice(0, 27) + '…' : words;
+    for (var i = 0; i < 5 && FILLER.test(t); i++) t = t.replace(FILLER, '');
+    if (!t) t = fallbackTitle || info.title || 'Learn';
+    return t.length > 26 ? t.slice(0, 25).replace(/\s+\S*$/, '') + '…' : t;
   }
 
   // Dzieci kursu. meta[name=learn_item] jest uporządkowane i wolne od sekcji
@@ -118,6 +123,43 @@
     return fetch(url, { credentials: 'omit', headers: { accept: 'application/json' } }).then(function (r) {
       if (!r.ok) throw new Error('HTTP ' + r.status + ' – ' + url);
       return r.json();
+    });
+  }
+
+  // Katalog kursow: pole study_guide mapuje kurs -> jego sciezki. Odwracamy to,
+  // zeby z lekcji trafic do calego kursu, a nie zatrzymac sie na pojedynczej sciezce.
+  var courseIndexCache = null;
+
+  function courseIndex(locale) {
+    if (courseIndexCache) return courseIndexCache;
+    courseIndexCache = getJson(ORIGIN + '/api/catalog/?locale=' + encodeURIComponent(locale) + '&type=courses')
+      .then(function (d) {
+        var byChild = {};
+        (d.courses || []).forEach(function (c) {
+          (c.study_guide || []).forEach(function (g) {
+            if (!byChild[g.uid]) byChild[g.uid] = c;      // przy kilku kursach bierzemy pierwszy
+          });
+        });
+        return byChild;
+      })
+      .catch(function () { return {}; });
+    return courseIndexCache;
+  }
+
+  // Kurs zawierajacy dana sciezke/modul albo null.
+  function courseForUid(uid, locale) {
+    return courseIndex(locale).then(function (ix) {
+      var c = ix[uid];
+      if (!c) return null;
+      return {
+        uid: c.uid,
+        title: c.title,
+        courseNumber: c.course_number || '',
+        url: absolute(c.url, locale),
+        children: (c.study_guide || []).map(function (g) {
+          return { uid: g.uid, type: g.type === 'learningPath' ? 'path' : 'module' };
+        })
+      };
     });
   }
 
@@ -271,6 +313,27 @@
 
   function resetProgress(courseKey) { return saveProgress(courseKey, {}); }
 
+  // Postep jest kluczowany adresem lekcji, wiec przy przebudowie planu (np. z waskiej
+  // sciezki na caly kurs) mozemy przejac to, co juz przerobione w innych planach.
+  function inheritProgress(plan) {
+    return loadIndex().then(function (ix) {
+      var others = Object.keys(ix.courses).filter(function (k) { return k !== plan.key; });
+      return Promise.all([loadProgress(plan.key)].concat(others.map(loadProgress))).then(function (all) {
+        var target = all[0], changed = false, wanted = {};
+        plan.items.forEach(function (it) { wanted[it.key] = 1; });
+        for (var i = 1; i < all.length; i++) {
+          var src = all[i];
+          for (var k in src) {
+            if (!wanted[k] || target[k] || !Object.prototype.hasOwnProperty.call(src, k)) continue;
+            target[k] = src[k];
+            changed = true;
+          }
+        }
+        return changed ? saveProgress(plan.key, target).then(function () { return target; }) : target;
+      });
+    });
+  }
+
   function loadUi() { return get(K.ui, { collapsed: false }); }
   function saveUi(ui) { return set(K.ui, ui); }
 
@@ -350,6 +413,7 @@
     pageInfo: pageInfo,
     badgeFor: badgeFor,
     courseChildren: courseChildren,
+    courseForUid: courseForUid,
     buildPlan: buildPlan,
     loadIndex: loadIndex,
     loadPlan: loadPlan,
@@ -359,6 +423,7 @@
     setActive: setActive,
     forgetCourse: forgetCourse,
     resetProgress: resetProgress,
+    inheritProgress: inheritProgress,
     loadUi: loadUi,
     saveUi: saveUi,
     stats: stats,
